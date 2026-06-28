@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friendly Snake Game</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:Arial, sans-serif;
+}
+
+body{
+  background:linear-gradient(135deg,#b7f7c3,#b6e3ff,#ffe5b4);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+}
+
+.container{
+  width:100%;
+  max-width:500px;
+  background:white;
+  border-radius:30px;
+  padding:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  text-align:center;
+}
+
+h1{
+  color:#1f7a4f;
+  margin-bottom:15px;
+}
+
+.top-bar{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:15px;
+}
+
+.card{
+  flex:1;
+  background:#f4fff4;
+  border-radius:20px;
+  padding:10px;
+  font-weight:bold;
+  color:#1f7a4f;
+}
+
+canvas{
+  background:#d7ffd7;
+  border:5px solid #6cc96c;
+  border-radius:20px;
+  width:100%;
+  max-width:400px;
+  touch-action:none;
+}
+
+.buttons{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+  margin-top:15px;
+}
+
+button,
+label{
+  border:none;
+  background:#5ec576;
+  color:white;
+  padding:10px 15px;
+  border-radius:20px;
+  cursor:pointer;
+  font-size:15px;
+}
+
+button:hover,
+label:hover{
+  background:#3fa95a;
+}
+
+#musicFile{
+  display:none;
+}
+
+.controls{
+  margin-top:20px;
+}
+
+.row{
+  display:flex;
+  justify-content:center;
+  gap:15px;
+  margin:8px 0;
+}
+
+.ctrl-btn{
+  width:65px;
+  height:65px;
+  border-radius:50%;
+  font-size:25px;
+  background:#ffb347;
+}
+
+.ctrl-btn:active{
+  transform:scale(0.95);
+}
+
+.how{
+  margin-top:20px;
+  background:#fff9d6;
+  padding:15px;
+  border-radius:20px;
+  text-align:left;
+}
+
+.how h2{
+  margin-bottom:10px;
+  color:#c57a00;
+}
+
+.how li{
+  margin-left:20px;
+  margin-bottom:8px;
+}
+
+@media (max-width:500px){
+  .ctrl-btn{
+    width:60px;
+    height:60px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🐍 Friendly Snake Game</h1>
+
+  <div class="top-bar">
+    <div class="card">
+      Score
+      <div id="score">0</div>
+    </div>
+
+    <div class="card">
+      Best
+      <div id="bestScore">0</div>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+  <div class="buttons">
+    <button id="pauseBtn">⏸ Pause</button>
+    <button id="muteBtn">🔊 Mute</button>
+
+    <label for="musicFile">
+      🎵 Choose Music
+    </label>
+
+    <input
+      type="file"
+      id="musicFile"
+      accept="audio/*"
+    >
+  </div>
+
+  <div class="controls">
+    <div class="row">
+      <button class="ctrl-btn" id="upBtn">⬆️</button>
+    </div>
+
+    <div class="row">
+      <button class="ctrl-btn" id="leftBtn">⬅️</button>
+      <button class="ctrl-btn" id="downBtn">⬇️</button>
+      <button class="ctrl-btn" id="rightBtn">➡️</button>
+    </div>
+  </div>
+
+  <div class="how">
+    <h2>📖 How to Play</h2>
+
+    <ul>
+      <li>Use arrow keys or touch buttons.</li>
+      <li>Eat apples to grow longer.</li>
+      <li>Don't hit the walls.</li>
+      <li>Don't hit yourself.</li>
+      <li>Upload your own music and enjoy.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+// PASTE PART 3 JAVASCRIPT HERE
+</script>
+
+</body>
+</html>const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const scoreEl = document.getElementById("score");
+const bestEl = document.getElementById("bestScore");
+const pauseBtn = document.getElementById("pauseBtn");
+const muteBtn = document.getElementById("muteBtn");
+const musicFile = document.getElementById("musicFile");
+
+const upBtn = document.getElementById("upBtn");
+const downBtn = document.getElementById("downBtn");
+const leftBtn = document.getElementById("leftBtn");
+const rightBtn = document.getElementById("rightBtn");
+
+const box = 20;
+const rows = canvas.width / box;
+
+let snake = [];
+let food = {};
+let direction = "RIGHT";
+let paused = false;
+let score = 0;
+
+let bestScore =
+  Number(localStorage.getItem("bestSnakeScore")) || 0;
+
+bestEl.textContent = bestScore;
+
+const music = new Audio();
+music.loop = true;
+
+function randomFood() {
+  food = {
+    x: Math.floor(Math.random() * rows) * box,
+    y: Math.floor(Math.random() * rows) * box
+  };
+}
+
+function resetGame() {
+  snake = [
+    { x: 10 * box, y: 10 * box }
+  ];
+
+  direction = "RIGHT";
+  score = 0;
+  scoreEl.textContent = score;
+  randomFood();
+}
+
+function drawCircle(x, y, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(
+    x + box / 2,
+    y + box / 2,
+    box / 2 - 2,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+}
+
+function gameOver() {
+  alert("Game Over!\nScore: " + score);
+  resetGame();
+}
+
+function draw() {
+  if (paused) return;
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  drawCircle(food.x, food.y, "#ff4d6d");
+
+  snake.forEach((part, i) => {
+    drawCircle(
+      part.x,
+      part.y,
+      i === 0 ? "#2ecc71" : "#66d966"
+    );
+  });
+
+  let x = snake[0].x;
+  let y = snake[0].y;
+
+  if (direction === "LEFT") x -= box;
+  if (direction === "RIGHT") x += box;
+  if (direction === "UP") y -= box;
+  if (direction === "DOWN") y += box;
+
+  if (
+    x < 0 ||
+    y < 0 ||
+    x >= canvas.width ||
+    y >= canvas.height
+  ) {
+    gameOver();
+    return;
+  }
+
+  for (let i = 0; i < snake.length; i++) {
+    if (
+      snake[i].x === x &&
+      snake[i].y === y
+    ) {
+      gameOver();
+      return;
+    }
+  }
+
+  const head = { x, y };
+
+  if (x === food.x && y === food.y) {
+    score++;
+    scoreEl.textContent = score;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestEl.textContent = bestScore;
+
+      localStorage.setItem(
+        "bestSnakeScore",
+        bestScore
+      );
+    }
+
+    randomFood();
+  } else {
+    snake.pop();
+  }
+
+  snake.unshift(head);
+}
+
+document.addEventListener(
+  "keydown",
+  e => {
+    if (
+      e.key === "ArrowLeft" &&
+      direction !== "RIGHT"
+    ) {
+      direction = "LEFT";
+    }
+
+    if (
+      e.key === "ArrowRight" &&
+      direction !== "LEFT"
+    ) {
+      direction = "RIGHT";
+    }
+
+    if (
+      e.key === "ArrowUp" &&
+      direction !== "DOWN"
+    ) {
+      direction = "UP";
+    }
+
+    if (
+      e.key === "ArrowDown" &&
+      direction !== "UP"
+    ) {
+      direction = "DOWN";
+    }
+  }
+);
+
+upBtn.onclick = () => {
+  if (direction !== "DOWN") {
+    direction = "UP";
+  }
+};
+
+downBtn.onclick = () => {
+  if (direction !== "UP") {
+    direction = "DOWN";
+  }
+};
+
+leftBtn.onclick = () => {
+  if (direction !== "RIGHT") {
+    direction = "LEFT";
+  }
+};
+
+rightBtn.onclick = () => {
+  if (direction !== "LEFT") {
+    direction = "RIGHT";
+  }
+};
+
+pauseBtn.onclick = () => {
+  paused = !paused;
+  pauseBtn.textContent =
+    paused ? "▶ Resume" : "⏸ Pause";
+};
+
+let muted = false;
+
+muteBtn.onclick = () => {
+  muted = !muted;
+  music.muted = muted;
+  muteBtn.textContent =
+    muted ? "🔈 Unmute" : "🔊 Mute";
+};
+
+musicFile.addEventListener(
+  "change",
+  function () {
+    const file = this.files[0];
+
+    if (!file) return;
+
+    music.src =
+      URL.createObjectURL(file);
+
+    music.play();
+  }
+);
+
+resetGame();
+setInterval(draw, 120);
